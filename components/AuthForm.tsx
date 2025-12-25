@@ -10,6 +10,12 @@ import {Form} from "@/components/ui/form"
 import { toast} from "sonner";
 import { useRouter } from 'next/navigation';
 import FormField from '@/components/FormField';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from "@/components/firebase/client";
+import { signUp } from '@/lib/actions/auth.action';
+import { signIn } from '@/lib/actions/auth.action';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+
 type AuthFormProps = {
   type?: string
 }
@@ -34,12 +40,41 @@ const AuthForm = ({ type }: {type:FormType}) => {
   },
 })
 
-function onSubmit(values:z.infer<typeof formSchema>){
+async function onSubmit(values:z.infer<typeof formSchema>){
 try {
   if(type==='sign-up'){
+
+   const {name,email,password}=values;
+   const userCredential=await createUserWithEmailAndPassword(auth,email,password);
+   const result=await signUp({
+    uid:userCredential.user.uid,
+    name:name!,
+    email,
+    password,
+   })
+   if(!result?.success){
+    toast.error(result?.message);
+    return;
+   }
+
+
     toast.success('Account created successfully!.Please sign in.');
     router.push('/sign-in');
   } else{
+       const {email,password}=values;
+       const userCredential=await signInWithEmailAndPassword(auth,email,password);
+       const idToken =await userCredential.user.getIdToken();
+       if(!idToken){
+        toast.error('Sign in failed')
+        return;
+       }
+       await signIn({
+        email,
+        idToken,
+       })
+
+
+
    toast.success('Sign in successfully.');
    router.push('/');
   }
@@ -47,12 +82,12 @@ try {
 }
 catch (error) {
   console.log(error);
-  toast.error('There was an error. Please try again.:${error}')
+  toast.error('There was an error. Please try again.: ${error}')
 }
 
  
 }
-const isSignIn =type ==='sign-in';
+const isSignIn = type ==='sign-in';
 
   return (
     <div className="card-border lg:min-w-[566px]">
@@ -62,9 +97,6 @@ const isSignIn =type ==='sign-in';
                 <h2 className="text-2xl font-bold">PrepMate</h2>
                 <h3>AI-Based Job Interview Practice Platform</h3>
         
-        
-       
-
       </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="w-full space-y-6 mt-4 form">
@@ -95,8 +127,8 @@ const isSignIn =type ==='sign-in';
       </Form>
       <p className ="text-center">
         {isSignIn ? "Don't have an account? " : 'Already have an account? '}
-        <Link href={!isSignIn ? '/sign-in' : '/sign-up'} className="text-primary underline hover:text-primary/80 transition-colors">
-        {isSignIn ? "Sign in" : "Sign up"}
+        <Link href={isSignIn ? '/sign-up' : '/sign-in'} className="text-primary underline hover:text-primary/80 transition-colors">
+        {isSignIn ? "Sign up" : "Sign in"}
         </Link>
       </p>
        </div>
