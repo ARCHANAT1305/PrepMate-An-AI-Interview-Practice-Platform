@@ -11,7 +11,7 @@ import { toast} from "sonner";
 import { useRouter } from 'next/navigation';
 import FormField from '@/components/FormField';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from "@/components/firebase/client";
+import { auth } from "@/firebase/client";
 import { signUp } from '@/lib/actions/auth.action';
 import { signIn } from '@/lib/actions/auth.action';
 import { signInWithEmailAndPassword } from 'firebase/auth';

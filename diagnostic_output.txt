@@ -1,0 +1,13 @@
+﻿≡ƒöì Starting Paranoid Diagnostic Check...
+Γ£à Loaded .env.local file
+
+--- Variable Inspection ---
+[FIREBASE_PROJECT_ID] Raw Value: 'prepmate-cdd0c'
+[FIREBASE_PROJECT_ID] Length: 14
+[FIREBASE_CLIENT_EMAIL] Raw Value: 'firebase-adminsdk-fbsvc@prepmate-cdd0c.iam.gserviceaccount.com'
+[FIREBASE_PRIVATE_KEY] Exists: true
+Γ£à Firebase App Initialized
+
+--- Testing Firestore Connection ---
+Targeting Project: prepmate-cdd0c
+Attempting listCollections()...
