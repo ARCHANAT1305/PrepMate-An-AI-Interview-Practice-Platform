@@ -1,7 +1,7 @@
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
 import { getRandomInterviewCover } from "@/lib/utils";
-import { db } from "@firebase/admin";
+import { db } from "@/firebase/admin";
 
 
 
@@ -41,14 +41,11 @@ export async function POST(request: Request) {
             finalized: true,
             coverImage: getRandomInterviewCover(),
             createdAt: new Date().toISOString()
+        };
 
-            
-            await db.collection("interviews").add(interview);
+        await db.collection("interviews").add(interview);
 
-            return Response.json({ success: true }, { status: 200 })
-
-
-        }
+        return Response.json({ success: true }, { status: 200 });
     } catch (error) {
         console.log(error);
         return Response.json({ success: false, error }, { status: 500 });
