@@ -11,11 +11,14 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-    // Validate VAPI secret key
+    // Validate VAPI Bearer Token
     const vapiSecret = process.env.VAPI_SECRET_KEY;
-    const incomingSecret = request.headers.get('x-vapi-secret');
+    const authHeader = request.headers.get('authorization');
 
-    if (!vapiSecret || incomingSecret !== vapiSecret) {
+    // Extract token from "Bearer <token>" format
+    const token = authHeader?.replace('Bearer ', '');
+
+    if (!vapiSecret || token !== vapiSecret) {
         return Response.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
