@@ -11,6 +11,14 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+    // Validate VAPI secret key
+    const vapiSecret = process.env.VAPI_SECRET_KEY;
+    const incomingSecret = request.headers.get('x-vapi-secret');
+
+    if (!vapiSecret || incomingSecret !== vapiSecret) {
+        return Response.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { type, role, level, techstack, amount, userid } = await request.json();
     try {
 
