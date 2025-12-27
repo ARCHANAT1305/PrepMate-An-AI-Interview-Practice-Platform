@@ -92,22 +92,30 @@ const Agent = ({ userName, userId, interviewId, type, questions }: AgentProps) =
     }, [messages, userId, callStatus, type, interviewId, router]);
 
     const handleCall = async () => {
-        console.log("Starting call:", { userName, userId, interviewId, type });
+        console.log("Preparing to start call...");
+        console.log("Context Data:", { userName, userId, interviewId, type });
+        console.log("Questions being passed:", questions);
+
+        if (!userName || !userId) {
+            console.warn("User name or ID is missing. The call might still start, but the AI won't know who you are.");
+        }
 
         if (!process.env.NEXT_PUBLIC_VAPI_WEB_TOKEN) {
-            console.error("Vapi Web Token is missing!");
+            console.error("CRITICAL: Vapi Web Token (NEXT_PUBLIC_VAPI_WEB_TOKEN) is missing from environment variables!");
             return;
         }
 
         setCallStatus(CallStatus.CONNECTING);
-        if (type === "generate") {
-            try {
+
+        try {
+            if (type === "generate") {
+                console.log("Starting 'Generate' workflow...");
                 await vapi.start(
                     undefined,
                     {
                         variableValues: {
-                            username: userName,
-                            userid: userId,
+                            username: userName || "Candidate",
+                            userid: userId || "unknown",
                         },
                         clientMessages: ["transcript" as any],
                         serverMessages: ["end-of-call-report" as any],
@@ -115,29 +123,28 @@ const Agent = ({ userName, userId, interviewId, type, questions }: AgentProps) =
                     undefined,
                     generator
                 );
-            } catch (err: any) {
-                console.error("Vapi generator failed:", err);
-                setCallStatus(CallStatus.INACTIVE);
-            }
-        } else {
-            let formattedQuestions = "";
-            if (questions) {
-                formattedQuestions = questions.map((q, i) => `${i + 1}. ${q}`).join("\n");
-            }
+            } else {
+                let formattedQuestions = "";
+                if (questions && questions.length > 0) {
+                    formattedQuestions = questions.map((q, i) => `${i + 1}. ${q}`).join("\n");
+                } else {
+                    console.warn("No questions found for this interview! The AI might not have anything to ask.");
+                }
 
-            try {
+                console.log("Starting 'Interview' assistant...");
                 await vapi.start(interviewer as any, {
                     variableValues: {
                         questions: formattedQuestions,
-                        interviewid: interviewId, // Pass the interview ID for webhook reference
+                        interviewid: interviewId,
                     },
                     clientMessages: ["transcript" as any],
                     serverMessages: ["end-of-call-report" as any],
                 });
-            } catch (err) {
-                console.error("Vapi interviewer failed:", err);
-                setCallStatus(CallStatus.INACTIVE);
             }
+            console.log("Vapi.start() executed successfully.");
+        } catch (err: any) {
+            console.error("Vapi call failed to initiate:", err);
+            setCallStatus(CallStatus.INACTIVE);
         }
     }
 
