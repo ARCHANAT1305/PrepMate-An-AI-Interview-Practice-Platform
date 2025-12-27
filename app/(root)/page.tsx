@@ -5,6 +5,7 @@ import Image from 'next/image'
 import InterviewCard from "@/components/InterviewCard";
 import { getCurrentUser } from '@/lib/actions/auth.action';
 import { getInterviews } from '@/lib/actions/general.action';
+import { dummyInterviews } from '@/constants';
 
 const Page = async () => {
   const user = await getCurrentUser();
@@ -44,7 +45,9 @@ const Page = async () => {
       <section className="flex flex-col gap-6 mt-8">
         <h2>Top Recommended Interviews</h2>
         <div className="interviews-section">
-          <p className="text-light-500">More interview templates coming soon!</p>
+          {dummyInterviews.map((interview: any) => (
+            <InterviewCard {...interview} interviewId={interview.id} key={interview.id} />
+          ))}
         </div>
       </section>
     </>
