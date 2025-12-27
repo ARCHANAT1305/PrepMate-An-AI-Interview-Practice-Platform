@@ -28,7 +28,6 @@ export async function signUp(params: SignUpParams) {
     catch (e: any) {
         console.error('Error creating user:', e);
 
-
         if (e.code === 'auth/email-already-exists') {
             return {
                 success: false,
@@ -40,40 +39,37 @@ export async function signUp(params: SignUpParams) {
             message: 'Failed to create user account. Please try again later.'
         }
     }
-
 }
-
 
 export async function signIn(params: SignInParams) {
     const { email, idToken } = params;
 
     try {
-
         const userRecord = await auth.getUserByEmail(email);
         if (!userRecord) {
             return {
                 success: false,
-                message: 'User does not exist.Create an account instead.'
+                message: 'User does not exist. Create an account instead.'
             }
         }
         await setSessionCookie(idToken);
-
+        return {
+            success: true,
+            message: 'Signed in successfully.'
+        }
     } catch (e) {
-        console.log(e);
+        console.log("Error in signIn:", e);
         return {
             success: false,
             message: 'Failed to log into an account. Please try again later.'
         }
     }
-
-
 }
 
 export async function setSessionCookie(idToken: string) {
     const cookieStore = await cookies();
     const sessionCookie = await auth.createSessionCookie(idToken, {
         expiresIn: ONE_WEEK * 1000,
-
     })
     cookieStore.set('session', sessionCookie, {
         maxAge: ONE_WEEK,
@@ -81,54 +77,33 @@ export async function setSessionCookie(idToken: string) {
         secure: process.env.NODE_ENV === 'production',
         path: '/',
         sameSite: 'lax',
-
-
     })
-
-
 }
 
 export async function getCurrentUser(): Promise<User | null> {
     const cookieStore = await cookies();
-
     const sessionCookie = cookieStore.get('session')?.value;
 
     if (!sessionCookie) return null;
 
     try {
-
-
         const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
-        const userRecord = await db.
-            collection('users')
-            .doc(decodedClaims.uid)
-            .get();
+        const userRecord = await db.collection('users').doc(decodedClaims.uid).get();
 
         if (!userRecord.exists) return null;
+
         return {
             ...userRecord.data(),
             id: userRecord.id,
         } as User;
 
-
     } catch (e: any) {
         console.error("Error in getCurrentUser:", JSON.stringify(e, null, 2));
-        if (e.code === 5 || e.code === '5') {
-            console.error("Firestore Error 5: NOT_FOUND. This usually means the 'users' collection or the specific document does not exist, OR the Project ID is incorrect.");
-        }
         return null;
     }
-
-
-
 }
 
 export async function isAuthenticated() {
     const user = await getCurrentUser();
-
-
     return !!user;
-
 }
-
-

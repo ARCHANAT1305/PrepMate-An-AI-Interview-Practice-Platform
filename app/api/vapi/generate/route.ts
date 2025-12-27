@@ -11,16 +11,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-    // Validate VAPI secret key
-    // const vapiSecret = process.env.VAPI_SECRET_KEY;
-    // const incomingSecret = request.headers.get('x-vapi-secret');
-
-    // if (!vapiSecret || incomingSecret !== vapiSecret) {
-    //     return Response.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    // }
-
-    const { type, role, level, techstack, amount, userid } = await request.json();
     try {
+        const body = await request.json();
+        const { type, role, level, techstack, amount, userid } = body;
+
+        console.log("Generating interview for user:", userid);
 
         const { text: questions } = await generateText({
             model: google("gemini-2.0-flash-001"),
@@ -35,28 +30,41 @@ export async function POST(request: Request) {
            Return the questions formatted like this:
            ["Question 1", "Question 2", "Question 3"]
         
-           Thank you! <3
+           Keep questions professional and relevant.
     `,
-
-
         });
 
+        let parsedQuestions;
+        try {
+            parsedQuestions = JSON.parse(questions);
+        } catch (e) {
+            console.error("Failed to parse questions:", questions);
+            // Fallback: try to find the array in the text
+            const match = questions.match(/\[[\s\S]*\]/);
+            if (match) {
+                parsedQuestions = JSON.parse(match[0]);
+            } else {
+                throw new Error("Could not parse AI response as JSON array");
+            }
+        }
+
         const interview = {
-            role, type, level,
-            techstack: techstack.split(','),
-            questions: JSON.parse(questions),
+            role,
+            type,
+            level,
+            techstack: typeof techstack === 'string' ? techstack.split(',').map((s: string) => s.trim()) : techstack,
+            questions: parsedQuestions,
             userId: userid,
-            finalized: true,
+            finalized: false, // Set to false initially, true when completed?
             coverImage: getRandomInterviewCover(),
             createdAt: new Date().toISOString()
         };
 
-        await db.collection("interviews").add(interview);
+        const docRef = await db.collection("interviews").add(interview);
 
-        return Response.json({ success: true }, { status: 200 });
-    } catch (error) {
-        console.log(error);
-        return Response.json({ success: false, error }, { status: 500 });
+        return Response.json({ success: true, interviewId: docRef.id }, { status: 200 });
+    } catch (error: any) {
+        console.error("Error in generate route:", error);
+        return Response.json({ success: false, error: error.message }, { status: 500 });
     }
-
 }
